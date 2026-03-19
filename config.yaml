@@ -1,0 +1,142 @@
+meta:
+  version: 3
+  flow: Chip
+  substituting_steps:
+
+    # Magic reports some overlaps which can be ignored
+    Checker.IllegalOverlap: null
+
+    # Disable KLayout DRC
+    #KLayout.DRC: null
+    #Checker.KLayoutDRC: null
+
+    # Disable magic DRC
+    #Magic.DRC: null
+    #Checker.MagicDRC: null
+
+    # Disable KLayout antenna check
+    #KLayout.Antenna: null
+    #Checker.KLayoutAntenna: null
+
+    # Disable KLayout density check
+    #KLayout.Density: null
+    #Checker.KLayoutDensity: null
+    
+    # Save time
+    #OpenROAD.IRDropReport: null
+    #KLayout.XOR: null
+    #Netgen.LVS: null
+    #Checker.LVS: null
+
+DESIGN_NAME: spm_chip_sg13cmos5l
+VERILOG_FILES:
+- dir::src/spm_chip_sg13cmos5l.sv 
+- dir::design/spm.sv 
+
+VERILOG_DEFINES: [FUNCTIONAL]
+
+# Enable plugin for better SystemVerilog support
+USE_SLANG: True
+SLANG_ARGUMENTS: ['--keep-hierarchy']
+
+# Slightly smaller file sizes
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout
+
+# Specify the pad instances for the padring
+# Pins 1-6 on west side (CCW: north to south); LibreLane orders west south-to-north
+PAD_WEST: [
+    "vss_pad",  # Pin6
+    "clk_pad",  # Pin5
+    "rst_pad",  # Pin4
+    "x_pad",    # Pin3
+    "y_pad",    # Pin2
+    "vdd_pad"   # Pin1
+]
+
+# Pins 7-12 on south side (CCW: west to east); LibreLane orders south west-to-east
+PAD_SOUTH: [
+    "a_pad\\[0\\].i_pad",  # Pin7
+    "a_pad\\[1\\].i_pad",  # Pin8
+    "a_pad\\[2\\].i_pad",  # Pin9
+    "a_pad\\[3\\].i_pad",  # Pin10
+    "a_pad\\[4\\].i_pad",  # Pin11
+    "a_pad\\[5\\].i_pad"   # Pin12
+]
+
+# Pins 13-18 on east side (CCW: south to north); LibreLane orders east south-to-north
+PAD_EAST: [
+    "iovss_pad",       # Pin13
+    "a_pad\\[6\\].i_pad", # Pin14
+    "a_pad\\[7\\].i_pad", # Pin15
+    "a_pad\\[8\\].i_pad", # Pin16
+    "a_pad\\[9\\].i_pad", # Pin17
+    "iovdd_pad"        # Pin18
+]
+
+# Pins 19-24 on north side (CCW: east to west); LibreLane orders north west-to-east
+PAD_NORTH: [
+    "a_pad\\[10\\].i_pad",  # Pin24
+    "a_pad\\[11\\].i_pad",  # Pin23
+    "a_pad\\[12\\].i_pad",  # Pin22
+    "a_pad\\[13\\].i_pad",  # Pin21
+    "a_pad\\[14\\].i_pad",  # Pin20
+    "a_pad\\[15\\].i_pad"   # Pin19
+]
+
+# SDC files
+PNR_SDC_FILE: dir::constraints/chip_top.sdc
+SIGNOFF_SDC_FILE: dir::constraints/chip_top.sdc
+FALLBACK_SDC: dir::constraints/chip_top.sdc
+
+# Power / ground nets
+VDD_NETS:
+- vdd
+GND_NETS:
+- vss
+
+# Clock
+CLOCK_PORT: clk
+CLOCK_NET: clk_pad/p2c
+
+CLOCK_PERIOD: 20
+
+# Floorplanning
+FP_SIZING: absolute
+
+# for the sealring on all sides
+DIE_AREA: [0, 0, 1200, 1200]
+CORE_AREA: [378, 378, 822, 822]
+
+# Increase for more logic
+# on your die
+PL_TARGET_DENSITY_PCT: 50
+GRT_ALLOW_CONGESTION: true
+
+# PDN
+PDN_CORE_RING: True
+
+# Override bondpad name
+PAD_BONDPAD_NAME: bondpad_70x70_5L
+
+# Bondpad is not yet included in the PDK
+EXTRA_GDS:
+- dir::ip/bondpad_70x70/gds/bondpad_70x70_5L.gds
+
+EXTRA_LEFS:
+- dir::ip/bondpad_70x70/lef/bondpad_70x70_5L.lef
+
+IGNORE_DISCONNECTED_MODULES:
+- bondpad_70x70_5L
+
+# Maximum metal width without slotting: 30um
+PDN_CORE_RING_VWIDTH: 15
+PDN_CORE_RING_HWIDTH: 15
+# Ensure minimum spacing for long metals
+PDN_CORE_RING_VSPACING: 5
+PDN_CORE_RING_HSPACING: 5
+
+PDN_CORE_RING_CONNECT_TO_PADS: True
+PDN_ENABLE_PINS: False
+
+# Because we have multiple power pads for one power domain
+MAGIC_EXT_UNIQUE: notopports
