@@ -20,12 +20,12 @@ def power_pad_type(name):
     return name[0].upper() + name[1:]
 
 
-def parse_port(port_def):
+def parse_port(port_def, reserved_extra=None):
     """Parse a port definition."""
     if isinstance(port_def, str):
         return {'name': port_def, 'width': 1}
     if isinstance(port_def, dict):
-        reserved = {'width', 'map', 'strength'}
+        reserved = {'width', 'map', 'strength'} | (reserved_extra or set())
         name_keys = [k for k in port_def if k not in reserved]
         if len(name_keys) != 1:
             raise ValueError(f"Expected exactly one signal name key in: {port_def!r}")
@@ -87,7 +87,30 @@ def main():
         port['dir'] = 'output'
         outputs.append(port)
 
-    all_ports = inputs + outputs
+    inouts = []
+    for p in cfg.get('inouts', []):
+        port = parse_port(p, reserved_extra={'in', 'out', 'oe'})
+        port['strength'] = port.pop('strength', 30)
+        port['dir'] = 'inout'
+        pad_name = port['name']
+        raw = p if isinstance(p, dict) else {}
+        port['in_sig'] = raw.get('in', f'{pad_name}_i')
+        port['out_sig'] = raw.get('out', f'{pad_name}_o')
+        port['oe_sig'] = raw.get('oe', f'{pad_name}_oe')
+        inouts.append(port)
+
+    tristates = []
+    for p in cfg.get('tristates', []):
+        port = parse_port(p, reserved_extra={'out', 'oe'})
+        port['strength'] = port.pop('strength', 30)
+        port['dir'] = 'tristate'
+        pad_name = port['name']
+        raw = p if isinstance(p, dict) else {}
+        port['out_sig'] = raw.get('out', f'{pad_name}_o')
+        port['oe_sig'] = raw.get('oe', f'{pad_name}_oe')
+        tristates.append(port)
+
+    all_ports = inputs + outputs + inouts + tristates
 
     # Pad cell power pin alignment: pad to max name length + 2
     power_pad_width = max((len(n) for n in power_names), default=0) + 2
@@ -97,6 +120,24 @@ def main():
     bus_inputs = [inp for inp in inputs if inp['width'] > 1]
     scalar_outputs = [out for out in outputs if out['width'] == 1]
     bus_outputs = [out for out in outputs if out['width'] > 1]
+    scalar_inouts = [io for io in inouts if io['width'] == 1]
+    bus_inouts = [io for io in inouts if io['width'] > 1]
+    scalar_tristates = [ts for ts in tristates if ts['width'] == 1]
+    bus_tristates = [ts for ts in tristates if ts['width'] > 1]
+
+    # Flat list of (port_name, wire_name) for design instantiation
+    connections = []
+    for port in inputs:
+        connections.append((port['signal'], port['signal'] + '_p2c'))
+    for port in outputs:
+        connections.append((port['signal'], port['signal'] + '_c2p'))
+    for io in inouts:
+        connections.append((io['in_sig'], io['in_sig']))
+        connections.append((io['out_sig'], io['out_sig']))
+        connections.append((io['oe_sig'], io['oe_sig']))
+    for ts in tristates:
+        connections.append((ts['out_sig'], ts['out_sig']))
+        connections.append((ts['oe_sig'], ts['oe_sig']))
 
     context = {
         'name': name,
@@ -109,11 +150,18 @@ def main():
         'bus_power': bus_power,
         'inputs': inputs,
         'outputs': outputs,
+        'inouts': inouts,
         'all_ports': all_ports,
         'scalar_inputs': scalar_inputs,
         'bus_inputs': bus_inputs,
         'scalar_outputs': scalar_outputs,
         'bus_outputs': bus_outputs,
+        'scalar_inouts': scalar_inouts,
+        'bus_inouts': bus_inouts,
+        'tristates': tristates,
+        'scalar_tristates': scalar_tristates,
+        'bus_tristates': bus_tristates,
+        'connections': connections,
         'power_pad_width': power_pad_width,
     }
 

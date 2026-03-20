@@ -5,7 +5,7 @@ module {{ name }} (
 {% endfor %}
 `endif
 {% for port in all_ports %}
-    inout logic {{ ('[%d:0] ' % (port.width - 1)) if port.width > 1 else '' }}{{ port.name }}{{ ',' if not loop.last else '' }}
+    {% if port.dir == 'input' %}input{% elif port.dir in ('output', 'tristate') %}output{% else %}inout{% endif %} logic {{ ('[%d:0] ' % (port.width - 1)) if port.width > 1 else '' }}{{ port.name }}{{ ',' if not loop.last else '' }}
 {% endfor %}
 );
 
@@ -15,11 +15,20 @@ module {{ name }} (
 {% for out in outputs %}
     logic {{ ('[%d:0] ' % (out.width - 1)) if out.width > 1 else '' }}{{ out.signal }}_c2p;
 {% endfor %}
+{% for io in inouts %}
+    logic {{ ('[%d:0] ' % (io.width - 1)) if io.width > 1 else '' }}{{ io.in_sig }};
+    logic {{ ('[%d:0] ' % (io.width - 1)) if io.width > 1 else '' }}{{ io.out_sig }};
+    logic {{ ('[%d:0] ' % (io.width - 1)) if io.width > 1 else '' }}{{ io.oe_sig }};
+{% endfor %}
+{% for ts in tristates %}
+    logic {{ ('[%d:0] ' % (ts.width - 1)) if ts.width > 1 else '' }}{{ ts.out_sig }};
+    logic {{ ('[%d:0] ' % (ts.width - 1)) if ts.width > 1 else '' }}{{ ts.oe_sig }};
+{% endfor %}
 
     {{ design_name }} i_{{ design_name }}
     (
-{% for port in all_ports %}
-        .{{ port.signal }} ({{ port.signal }}_{{ 'p2c' if port.dir == 'input' else 'c2p' }}){{ ',' if not loop.last else '' }}
+{% for sig, wire in connections %}
+        .{{ sig }} ({{ wire }}){{ ',' if not loop.last else '' }}
 {% endfor %}
     );
 
@@ -106,6 +115,72 @@ module {{ name }} (
                 `endif
                 .p2c    ({{ inp.signal }}_p2c[{{ inp.signal }}_i]),
                 .pad    ({{ inp.name }}[{{ inp.signal }}_i])
+            );
+        end
+    endgenerate
+{% endfor %}
+{% for io in scalar_inouts %}
+    (* keep *)
+    {{ tech_prefix }}_IOPadInOut{{ io.strength }}mA {{ io.name }}_pad (
+        `ifdef USE_POWER_PINS
+{% for pw in power_names %}
+        .{{ pw | ljust(power_pad_width) }}({{ pw }}),
+{% endfor %}
+        `endif
+        .c2p    ({{ io.out_sig }}),
+        .c2p_en ({{ io.oe_sig }}),
+        .p2c    ({{ io.in_sig }}),
+        .pad    ({{ io.name }})
+    );
+
+{% endfor %}
+{% for io in bus_inouts %}
+    genvar {{ io.name }}_i;
+    generate
+        for ({{ io.name }}_i = 0; {{ io.name }}_i < {{ io.width }}; {{ io.name }}_i = {{ io.name }}_i + 1) begin : {{ io.name }}_pad
+            (* keep *)
+            {{ tech_prefix }}_IOPadInOut{{ io.strength }}mA i_pad (
+                `ifdef USE_POWER_PINS
+{% for pw in power_names %}
+                .{{ pw | ljust(power_pad_width) }}({{ pw }}),
+{% endfor %}
+                `endif
+                .c2p    ({{ io.out_sig }}[{{ io.name }}_i]),
+                .c2p_en ({{ io.oe_sig }}[{{ io.name }}_i]),
+                .p2c    ({{ io.in_sig }}[{{ io.name }}_i]),
+                .pad    ({{ io.name }}[{{ io.name }}_i])
+            );
+        end
+    endgenerate
+{% endfor %}
+{% for ts in scalar_tristates %}
+    (* keep *)
+    {{ tech_prefix }}_IOPadTriOut{{ ts.strength }}mA {{ ts.name }}_pad (
+        `ifdef USE_POWER_PINS
+{% for pw in power_names %}
+        .{{ pw | ljust(power_pad_width) }}({{ pw }}),
+{% endfor %}
+        `endif
+        .c2p    ({{ ts.out_sig }}),
+        .c2p_en ({{ ts.oe_sig }}),
+        .pad    ({{ ts.name }})
+    );
+
+{% endfor %}
+{% for ts in bus_tristates %}
+    genvar {{ ts.name }}_i;
+    generate
+        for ({{ ts.name }}_i = 0; {{ ts.name }}_i < {{ ts.width }}; {{ ts.name }}_i = {{ ts.name }}_i + 1) begin : {{ ts.name }}_pad
+            (* keep *)
+            {{ tech_prefix }}_IOPadTriOut{{ ts.strength }}mA i_pad (
+                `ifdef USE_POWER_PINS
+{% for pw in power_names %}
+                .{{ pw | ljust(power_pad_width) }}({{ pw }}),
+{% endfor %}
+                `endif
+                .c2p    ({{ ts.out_sig }}[{{ ts.name }}_i]),
+                .c2p_en ({{ ts.oe_sig }}[{{ ts.name }}_i]),
+                .pad    ({{ ts.name }}[{{ ts.name }}_i])
             );
         end
     endgenerate
