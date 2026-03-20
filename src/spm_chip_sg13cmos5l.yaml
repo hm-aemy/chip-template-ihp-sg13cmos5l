@@ -1,0 +1,23 @@
+# This file is used once to generate the boiler plate top-level chip wrapper.
+
+technology: ihp-sg13cmos5l
+name: spm_chip_sg13cmos5l
+
+design: spm
+
+power:
+  vdd: 1
+  vss: 1
+  iovdd: 1
+  iovss: 1
+
+inputs:
+  - clk
+  - rst_n:
+    map: rst
+  - x
+  - a:
+    width: 16
+
+outputs:
+  - y

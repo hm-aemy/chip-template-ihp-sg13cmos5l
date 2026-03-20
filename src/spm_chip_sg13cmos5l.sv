@@ -1,9 +1,9 @@
 module spm_chip_sg13cmos5l (
 `ifdef USE_POWER_PINS
-    inout iovdd,
-    inout iovss,
     inout vdd,
     inout vss,
+    inout iovdd,
+    inout iovss,
 `endif
     inout logic clk,
     inout logic rst_n,
@@ -28,76 +28,64 @@ module spm_chip_sg13cmos5l (
     );
 
     (* keep *)
-    sg13cmos5l_IOPadIOVdd iovdd_pad  (
-        `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
-        .vdd    (vdd),
-        .vss    (vss)
-        `endif
-    );
-
-    (* keep *)
-    sg13cmos5l_IOPadIOVss iovss_pad  (
-        `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
-        .vdd    (vdd),
-        .vss    (vss)
-        `endif
-    );
-
-    (* keep *)
     sg13cmos5l_IOPadVdd vdd_pad  (
         `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
         .vdd    (vdd),
-        .vss    (vss)
+        .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss)
         `endif
     );
 
     (* keep *)
     sg13cmos5l_IOPadVss vss_pad  (
         `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
         .vdd    (vdd),
-        .vss    (vss)
+        .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss)
+        `endif
+    );
+
+    (* keep *)
+    sg13cmos5l_IOPadIOVdd iovdd_pad  (
+        `ifdef USE_POWER_PINS
+        .vdd    (vdd),
+        .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss)
+        `endif
+    );
+
+    (* keep *)
+    sg13cmos5l_IOPadIOVss iovss_pad  (
+        `ifdef USE_POWER_PINS
+        .vdd    (vdd),
+        .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss)
         `endif
     );
 
     (* keep *)
     sg13cmos5l_IOPadOut30mA y_pad (
         `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
         .vdd    (vdd),
         .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss),
         `endif
         .c2p    (y_c2p),
         .pad    (y)
     );
 
     (* keep *)
-    sg13cmos5l_IOPadIn x_pad (
-        `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
-        .vdd    (vdd),
-        .vss    (vss),
-        `endif
-        .p2c    (x_p2c),
-        .pad    (x)
-    );
-
-    (* keep *)
     sg13cmos5l_IOPadIn clk_pad (
         `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
         .vdd    (vdd),
         .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss),
         `endif
         .p2c    (clk_p2c),
         .pad    (clk)
@@ -106,28 +94,40 @@ module spm_chip_sg13cmos5l (
     (* keep *)
     sg13cmos5l_IOPadIn rst_pad (
         `ifdef USE_POWER_PINS
-        .iovdd  (iovdd),
-        .iovss  (iovss),
         .vdd    (vdd),
         .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss),
         `endif
         .p2c    (rst_p2c),
         .pad    (rst_n)
     );
 
-    genvar i;
+    (* keep *)
+    sg13cmos5l_IOPadIn x_pad (
+        `ifdef USE_POWER_PINS
+        .vdd    (vdd),
+        .vss    (vss),
+        .iovdd  (iovdd),
+        .iovss  (iovss),
+        `endif
+        .p2c    (x_p2c),
+        .pad    (x)
+    );
+
+    genvar a_i;
     generate
-        for (i = 0; i < 16; i = i + 1) begin : a_pad
+        for (a_i = 0; a_i < 16; a_i = a_i + 1) begin : a_pad
             (* keep *)
             sg13cmos5l_IOPadIn i_pad (
                 `ifdef USE_POWER_PINS
-                .iovdd  (iovdd),
-                .iovss  (iovss),
                 .vdd    (vdd),
                 .vss    (vss),
+                .iovdd  (iovdd),
+                .iovss  (iovss),
                 `endif
-                .p2c    (a_p2c[i]),
-                .pad    (a[i])
+                .p2c    (a_p2c[a_i]),
+                .pad    (a[a_i])
             );
         end
     endgenerate
