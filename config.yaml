@@ -11,8 +11,8 @@ meta:
     #Checker.KLayoutDRC: null
 
     # Disable magic DRC
-    #Magic.DRC: null
-    #Checker.MagicDRC: null
+    Magic.DRC: null
+    Checker.MagicDRC: null
 
     # Disable KLayout antenna check
     #KLayout.Antenna: null
